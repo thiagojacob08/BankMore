@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BankMore.Tarifa.Application\BankMore.Tarifa.Application.csproj" />
+    <ProjectReference Include="..\BankMore.Tarifa.Domain\BankMore.Tarifa.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
