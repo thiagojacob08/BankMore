@@ -11,4 +11,11 @@
     <ProjectReference Include="..\BankMore.Tarifa.Domain\BankMore.Tarifa.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Data\" />
+    <Folder Include="Configurations\" />
+    <Folder Include="Migrations\" />
+    <Folder Include="Repositories\" />
+  </ItemGroup>
+
 </Project>

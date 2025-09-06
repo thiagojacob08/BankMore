@@ -18,4 +18,8 @@
     <ProjectReference Include="..\BankMore.Tarifa.Application\BankMore.Tarifa.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
 </Project>
