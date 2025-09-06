@@ -1,0 +1,7 @@
+services:
+  conta-corrente-api:
+    build:
+      context: .
+      dockerfile: src/ContaCorrente/BankMore.ContaCorrente/Dockerfile
+    ports:
+      - "5001:8080"

@@ -1,68 +1,68 @@
 ﻿using BankMore.ContaCorrente.Application.Commands;
-using BankMore.ContaCorrente.Infrastructure.Data;
+using BankMore.ContaCorrente.Domain.Entities;
+using BankMore.ContaCorrente.Domain.Interfaces;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace BankMore.ContaCorrente.Application.Handlers;
-
-public class CreateContaCorrenteHandler : IRequestHandler<CreateContaCorrenteCommand, CreateContaCorrenteResult>
+namespace BankMore.ContaCorrente.Application.Handlers
 {
-    private readonly BancoContext _context;
-
-    public CreateContaCorrenteHandler(BancoContext context)
+    public class CreateContaCorrenteHandler : IRequestHandler<CreateContaCorrenteCommand, CreateContaCorrenteResult>
     {
-        _context = context;
-    }
+        private readonly IContaCorrenteRepository _repository;
 
-    public async Task<CreateContaCorrenteResult> Handle(CreateContaCorrenteCommand request, CancellationToken cancellationToken)
-    {
-        // Gerar salt e hash da senha
-        var salt = GenerateSalt();
-        var senhaHash = HashPassword(request.Senha, salt);
-
-        // Gerar número da conta (único)
-        int numeroConta;
-        do
+        public CreateContaCorrenteHandler(IContaCorrenteRepository repository)
         {
-            numeroConta = new Random().Next(100000, 999999);
-        } while (await _context.ContasCorrentes.AnyAsync(c => c.Numero == numeroConta));
+            _repository = repository;
+        }
 
-        var conta = new Domain.Entities.ContaCorrente
+        public async Task<CreateContaCorrenteResult> Handle(CreateContaCorrenteCommand request, CancellationToken cancellationToken)
         {
-            IdContaCorrente = Guid.NewGuid().ToString(),
-            Nome = request.Nome,
-            Numero = numeroConta,
-            Senha = senhaHash,
-            Salt = salt,
-            Ativo = true
-        };
+            // Gerar salt e hash da senha
+            var salt = GenerateSalt();
+            var senhaHash = HashPassword(request.Senha, salt);
 
-        _context.ContasCorrentes.Add(conta);
-        await _context.SaveChangesAsync(cancellationToken);
+            // Gerar número da conta
+            int numeroConta;
+            do
+            {
+                numeroConta = new Random().Next(100000, 999999);
+            } while (await _repository.GetByNumeroAsync(numeroConta) != null);
 
-        return new CreateContaCorrenteResult
+            var conta = new Domain.Entities.ContaCorrente
+            {
+                IdContaCorrente = Guid.NewGuid().ToString(),
+                Nome = request.Nome,
+                Numero = numeroConta,
+                Senha = senhaHash,
+                Salt = salt,
+                Ativo = true
+            };
+
+            await _repository.AddAsync(conta);
+            await _repository.SaveChangesAsync();
+
+            return new CreateContaCorrenteResult
+            {
+                NumeroConta = numeroConta,
+                IdContaCorrente = conta.IdContaCorrente
+            };
+        }
+
+        private static string GenerateSalt()
         {
-            NumeroConta = numeroConta,
-            IdContaCorrente = conta.IdContaCorrente
-        };
-    }
+            byte[] saltBytes = new byte[16];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(saltBytes);
+            return Convert.ToBase64String(saltBytes);
+        }
 
-    // ------------------ Helpers ------------------
-    private static string GenerateSalt()
-    {
-        byte[] saltBytes = new byte[16];
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(saltBytes);
-        return Convert.ToBase64String(saltBytes);
-    }
-
-    private static string HashPassword(string senha, string salt)
-    {
-        using var sha256 = SHA256.Create();
-        var combined = Encoding.UTF8.GetBytes(senha + salt);
-        var hash = sha256.ComputeHash(combined);
-        return Convert.ToBase64String(hash);
+        private static string HashPassword(string senha, string salt)
+        {
+            using var sha256 = SHA256.Create();
+            var combined = Encoding.UTF8.GetBytes(senha + salt);
+            var hash = sha256.ComputeHash(combined);
+            return Convert.ToBase64String(hash);
+        }
     }
 }

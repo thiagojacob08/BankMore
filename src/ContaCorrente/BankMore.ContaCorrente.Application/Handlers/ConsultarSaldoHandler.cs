@@ -1,11 +1,13 @@
-﻿using BankMore.ContaCorrente.Application.Queries;
+﻿using BankMore.ContaCorrente.Application.DTOs;
+using BankMore.ContaCorrente.Application.Queries;
+using BankMore.ContaCorrente.Domain.Enums;
 using BankMore.ContaCorrente.Infrastructure.Data;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace BankMore.ContaCorrente.Application.Handlers;
 
-public class ConsultarSaldoHandler : IRequestHandler<ConsultarSaldoQuery, ConsultarSaldoResult>
+public class ConsultarSaldoHandler : IRequestHandler<ConsultarSaldoQuery, ConsultarSaldoDto>
 {
     private readonly BancoContext _context;
 
@@ -14,7 +16,7 @@ public class ConsultarSaldoHandler : IRequestHandler<ConsultarSaldoQuery, Consul
         _context = context;
     }
 
-    public async Task<ConsultarSaldoResult> Handle(ConsultarSaldoQuery request, CancellationToken cancellationToken)
+    public async Task<ConsultarSaldoDto> Handle(ConsultarSaldoQuery request, CancellationToken cancellationToken)
     {
         var conta = await _context.ContasCorrentes
             .Include(c => c.Movimentos)
@@ -28,9 +30,9 @@ public class ConsultarSaldoHandler : IRequestHandler<ConsultarSaldoQuery, Consul
 
         // Calcular saldo = soma créditos - soma débitos
         var saldo = conta.Movimentos
-            .Sum(m => m.TipoMovimento == "C" ? m.Valor : -m.Valor);
+            .Sum(m => m.TipoMovimento == TipoMovimentacao.C ? m.Valor : -m.Valor);
 
-        return new ConsultarSaldoResult
+        return new ConsultarSaldoDto
         {
             NumeroConta = conta.Numero,
             Nome = conta.Nome,

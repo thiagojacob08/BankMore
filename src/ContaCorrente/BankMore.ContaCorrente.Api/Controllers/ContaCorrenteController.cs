@@ -17,24 +17,13 @@ public class ContaCorrenteController : ControllerBase
         _mediator = mediator;
     }
 
-    // POST: api/ContaCorrente
+    // ------------------ Conta ------------------
     [HttpPost("cadastrar")]
     public async Task<IActionResult> Cadastrar([FromBody] CreateContaCorrenteCommand command)
     {
-        // Validação básica do CPF (opcional)
-        if (!IsCpfValid(command.CPF))
-        {
-            return BadRequest(new
-            {
-                message = "CPF inválido.",
-                type = "INVALID_DOCUMENT"
-            });
-        }
-
         try
         {
             var result = await _mediator.Send(command);
-
             return CreatedAtAction(nameof(Obter), new { numeroConta = result.NumeroConta }, new
             {
                 numeroConta = result.NumeroConta,
@@ -43,20 +32,16 @@ public class ContaCorrenteController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new
-            {
-                message = ex.Message,
-                type = "ERROR"
-            });
+            return BadRequest(new { message = ex.Message, type = "ERROR" });
         }
     }
 
-    // GET: api/ContaCorrente/{numeroConta}
     [HttpGet("{numeroConta}")]
     public async Task<IActionResult> Obter(int numeroConta)
     {
-        // Aqui você pode implementar a lógica para retornar a conta pelo número
-        return Ok(new { message = "Endpoint de exemplo" });
+        var query = new ObterContaPorNumeroQuery { numeroContaCorrente = numeroConta };
+        var conta = await _mediator.Send(query);
+        return Ok(conta);
     }
 
     [HttpPost("login")]
@@ -65,27 +50,19 @@ public class ContaCorrenteController : ControllerBase
         try
         {
             var result = await _mediator.Send(query);
-            return Ok(new
-            {
-                token = result.Token,
-                idContaCorrente = result.IdContaCorrente
-            });
+            return Ok(new { token = result.Token, idContaCorrente = result.IdContaCorrente });
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Unauthorized(new
-            {
-                message = ex.Message,
-                type = "USER_UNAUTHORIZED"
-            });
+            return Unauthorized(new { message = ex.Message, type = "USER_UNAUTHORIZED" });
         }
     }
 
+    // ------------------ Movimentação ------------------
     [HttpPost("movimentar")]
     [Authorize]
     public async Task<IActionResult> Movimentar([FromBody] MovimentarContaCommand command)
     {
-        // Pega IdContaOrigem do token
         var idConta = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (string.IsNullOrEmpty(idConta))
             return Forbid();
@@ -95,23 +72,11 @@ public class ContaCorrenteController : ControllerBase
         try
         {
             await _mediator.Send(command);
-            return NoContent(); // 204
+            return NoContent();
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new
-            {
-                message = ex.Message,
-                type = ex.Message switch
-                {
-                    "Conta não cadastrada." => "INVALID_ACCOUNT",
-                    "Conta inativa." => "INACTIVE_ACCOUNT",
-                    "Valor deve ser positivo." => "INVALID_VALUE",
-                    "Tipo de movimento inválido." => "INVALID_TYPE",
-                    "Transferência só permite crédito na conta de destino." => "INVALID_TYPE",
-                    _ => "ERROR"
-                }
-            });
+            return BadRequest(new { message = ex.Message, type = "INVALID_OPERATION" });
         }
     }
 
@@ -119,47 +84,50 @@ public class ContaCorrenteController : ControllerBase
     [Authorize]
     public async Task<IActionResult> ConsultarSaldo()
     {
-        // Pega IdContaCorrente do token
         var idConta = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
         if (string.IsNullOrEmpty(idConta))
             return Forbid();
 
         var query = new ConsultarSaldoQuery { IdContaCorrente = idConta };
+        var result = await _mediator.Send(query);
+        return Ok(new
+        {
+            numeroConta = result.NumeroConta,
+            nome = result.Nome,
+            dataHoraConsulta = result.DataHoraConsulta,
+            saldo = result.Saldo
+        });
+    }
 
+    // ------------------ Tarifa ------------------
+    [HttpPost("tarifa")]
+    [Authorize]
+    public async Task<IActionResult> AdicionarTarifa([FromBody] AddTarifaCommand command)
+    {
         try
         {
-            var result = await _mediator.Send(query);
-
-            return Ok(new
-            {
-                numeroConta = result.NumeroConta,
-                nome = result.Nome,
-                dataHoraConsulta = result.DataHoraConsulta,
-                saldo = result.Saldo
-            });
+            await _mediator.Send(command);
+            return NoContent();
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex)
         {
-            return BadRequest(new
-            {
-                message = ex.Message,
-                type = ex.Message switch
-                {
-                    "Conta não cadastrada." => "INVALID_ACCOUNT",
-                    "Conta inativa." => "INACTIVE_ACCOUNT",
-                    _ => "ERROR"
-                }
-            });
+            return BadRequest(new { message = ex.Message, type = "ERROR" });
         }
     }
 
-
-    // ------------------ Helpers ------------------
-    private bool IsCpfValid(string cpf)
+    // ------------------ Transferência ------------------
+    [HttpPost("transferencia")]
+    [Authorize]
+    public async Task<IActionResult> AdicionarTransferencia([FromBody] AddTransferenciaCommand command)
     {
-        // Implementação simples de validação de CPF (apenas tamanho e dígitos)
-        if (string.IsNullOrWhiteSpace(cpf)) return false;
-        var digits = cpf.Where(char.IsDigit).ToArray();
-        return digits.Length == 11;
+        try
+        {
+            await _mediator.Send(command);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message, type = "INVALID_OPERATION" });
+        }
     }
 }

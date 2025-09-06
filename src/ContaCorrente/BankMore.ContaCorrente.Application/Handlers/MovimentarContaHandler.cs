@@ -37,10 +37,10 @@ public class MovimentarContaHandler : IRequestHandler<MovimentarContaCommand>
         if (request.Valor <= 0)
             throw new InvalidOperationException("Valor deve ser positivo."); // INVALID_VALUE
 
-        if (request.TipoMovimento != "C" && request.TipoMovimento != "D")
+        if (request.TipoMovimento != Domain.Enums.TipoMovimentacao.C && request.TipoMovimento != Domain.Enums.TipoMovimentacao.D)
             throw new InvalidOperationException("Tipo de movimento inválido."); // INVALID_TYPE
 
-        if (request.IdContaDestino != null && request.TipoMovimento != "C")
+        if (request.IdContaDestino != null && request.TipoMovimento != Domain.Enums.TipoMovimentacao.C)
             throw new InvalidOperationException("Transferência só permite crédito na conta de destino."); // INVALID_TYPE
 
         // ---------------- Persistir Movimento ----------------

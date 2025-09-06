@@ -3,8 +3,8 @@
 public class Tarifa
 {
     public string IdTarifa { get; set; } = Guid.NewGuid().ToString();
-    public string IdContaCorrente { get; set; } = string.Empty;
-    public DateTime DataMovimento { get; set; }
+    public string IdContaCorrente { get; set; } 
+    public DateTime DataMovimento { get; set; } = DateTime.UtcNow;
     public decimal Valor { get; set; }
 
     // Navegação

@@ -2,12 +2,13 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
-namespace BankMore.Transferencia.Api.Controllers
+namespace BankMore.Transferencia.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize] // Garante que todos endpoints precisem de token JWT
     public class TransferenciaController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -18,27 +19,17 @@ namespace BankMore.Transferencia.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Efetuar([FromBody] EfetuarTransferenciaCommand command)
+        public async Task<IActionResult> EfetuarTransferencia([FromBody] EfetuarTransferenciaCommand command)
         {
             try
             {
-                // Extrai IdContaOrigem do token
-                var idConta = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
-                if (string.IsNullOrEmpty(idConta))
-                    return Forbid();
-
-                command.IdContaOrigem = idConta;
-
                 await _mediator.Send(command);
-                return NoContent(); // 204
+                return NoContent(); // HTTP 204 em caso de sucesso
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new
-                {
-                    message = ex.Message,
-                    type = "INVALID_OPERATION"
-                });
+                // Retorna HTTP 400 com a mensagem de falha
+                return BadRequest(new { Message = ex.Message });
             }
         }
     }

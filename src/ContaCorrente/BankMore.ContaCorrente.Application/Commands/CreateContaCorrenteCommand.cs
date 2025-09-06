@@ -12,5 +12,5 @@ public class CreateContaCorrenteCommand : IRequest<CreateContaCorrenteResult>
 public class CreateContaCorrenteResult
 {
     public int NumeroConta { get; set; }
-    public string IdContaCorrente { get; set; } = string.Empty;
+    public string? IdContaCorrente { get; set; } 
 }

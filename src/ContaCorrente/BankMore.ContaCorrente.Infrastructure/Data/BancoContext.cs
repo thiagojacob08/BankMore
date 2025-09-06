@@ -36,6 +36,11 @@ public class BancoContext : DbContext
             .HasForeignKey(m => m.IdContaCorrente)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<Movimento>()
+            .Property(m => m.TipoMovimento)
+            .HasConversion<string>()
+            .HasMaxLength(1);
+
         // Transferencia
         modelBuilder.Entity<Transferencia>()
             .HasKey(t => t.IdTransferencia);

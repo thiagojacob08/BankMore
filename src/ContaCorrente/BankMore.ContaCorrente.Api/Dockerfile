@@ -1,32 +1,35 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-# Depending on the operating system of the host machines(s) that will build or run the containers, the image specified in the FROM statement may need to be changed.
-# For more information, please see https://aka.ms/containercompat
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-1809 AS base
+# Imagem base para runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+EXPOSE 80
 
-
-# This stage is used to build the service project
-FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-1809 AS build
-ARG BUILD_CONFIGURATION=Release
+# Imagem base para build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["src/ContaCorrente/BankMore.ContaCorrente/BankMore.ContaCorrente.csproj", "src/ContaCorrente/BankMore.ContaCorrente/"]
-RUN dotnet restore "./src/ContaCorrente/BankMore.ContaCorrente/BankMore.ContaCorrente.csproj"
+
+# Copiar csproj
+COPY ["src/ContaCorrente/BankMore.ContaCorrente.Api/BankMore.ContaCorrente.Api.csproj", "BankMore.ContaCorrente.Api/"]
+COPY ["src/ContaCorrente/BankMore.ContaCorrente.Application/BankMore.ContaCorrente.Application.csproj", "BankMore.ContaCorrente.Application/"]
+COPY ["src/ContaCorrente/BankMore.ContaCorrente.Domain/BankMore.ContaCorrente.Domain.csproj", "BankMore.ContaCorrente.Domain/"]
+COPY ["src/ContaCorrente/BankMore.ContaCorrente.Infrastructure/BankMore.ContaCorrente.Infrastructure.csproj", "BankMore.ContaCorrente.Infrastructure/"]
+
+
+RUN dotnet restore "BankMore.ContaCorrente.Api/BankMore.ContaCorrente.Api.csproj"
+
+# Copiar todo o restante do código
 COPY . .
-WORKDIR "/src/src/ContaCorrente/BankMore.ContaCorrente"
-RUN dotnet build "./BankMore.ContaCorrente.csproj" -c %BUILD_CONFIGURATION% -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
+WORKDIR "/src/BankMore.ContaCorrente.Api"
+
+# Build da aplicação
+RUN dotnet build "BankMore.ContaCorrente.Api.csproj" -c Release -o /app/build
+
+# Publicação da aplicação
 FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./BankMore.ContaCorrente.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "BankMore.ContaCorrente.Api.csproj" -c Release -o /app/publish
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+# Imagem final
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "BankMore.ContaCorrente.dll"]
+ENTRYPOINT ["dotnet", "BankMore.ContaCorrente.Api.dll"]

@@ -1,4 +1,5 @@
-﻿using BankMore.ContaCorrente.Application.Queries;
+﻿using BankMore.ContaCorrente.Application.DTOs;
+using BankMore.ContaCorrente.Application.Queries;
 using BankMore.ContaCorrente.Infrastructure.Data;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,7 @@ using System.Text;
 
 namespace BankMore.ContaCorrente.Application.Handlers;
 
-public class LoginContaCorrenteHandler : IRequestHandler<LoginContaCorrenteQuery, LoginContaCorrenteResult>
+public class LoginContaCorrenteHandler : IRequestHandler<LoginContaCorrenteQuery, LoginContaCorrenteDto>
 {
     private readonly BancoContext _context;
     private readonly IConfiguration _configuration;
@@ -22,7 +23,7 @@ public class LoginContaCorrenteHandler : IRequestHandler<LoginContaCorrenteQuery
         _configuration = configuration;
     }
 
-    public async Task<LoginContaCorrenteResult> Handle(LoginContaCorrenteQuery request, CancellationToken cancellationToken)
+    public async Task<LoginContaCorrenteDto> Handle(LoginContaCorrenteQuery request, CancellationToken cancellationToken)
     {
         Domain.Entities.ContaCorrente? conta = null;
 
@@ -46,7 +47,7 @@ public class LoginContaCorrenteHandler : IRequestHandler<LoginContaCorrenteQuery
         // Gera JWT
         var token = GenerateJwt(conta);
 
-        return new LoginContaCorrenteResult
+        return new LoginContaCorrenteDto
         {
             IdContaCorrente = conta.IdContaCorrente,
             Token = token
@@ -68,7 +69,7 @@ public class LoginContaCorrenteHandler : IRequestHandler<LoginContaCorrenteQuery
 
         var claims = new[]
         {
-                new Claim("id", conta.IdContaCorrente),
+                new Claim("id", conta.IdContaCorrente.ToString()),
                 new Claim("numeroConta", conta.Numero.ToString())
             };
 
